@@ -1,0 +1,278 @@
+---
+title: "Whether Exposures to Ambient Air Pollution and Secondhand Smoking is associated with Human Depression: A Meta-analysis"
+author: "Yinsu Wang"
+date: "4/25/2021"
+output:
+  pdf_document:
+    latex_engine: xelatex
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+
+```{r}
+library(metafor)
+library(readxl)
+library(dmetar)
+library(ggeffects)
+library(ggplot2)
+library(meta)
+library(dmetar)
+library(forestplot)
+result <-read_excel("/Users/wangyinsu/Desktop/iMEP/2021spring/718K/project/meta-analysis/meta\ analysis_final\ report/meta_final_result/result.xlsx", 
+  col_types = c("text", "numeric", "numeric", "numeric", "text", "numeric", "text", "text", "text", "numeric"))
+result$continent = factor(result$continent)
+result$pollutant = factor(result$pollutant)
+result$studydesign = factor(result$studydesign)
+result$duration = factor(result$duration)
+result.data<-as.data.frame(result)
+```
+
+```{r, out.width='\\textwidth', out.height='\\textheight', fig.height = 10, fig.align='center'}
+#meta effect size+forest plot
+madata<-result
+str(madata)
+madata$Author<-factor(madata$Author)
+madata$Author
+madata$pollutant<-factor(madata$pollutant)
+madata$pollutant
+result$seTE = (result$UB - result$LB)/3.92
+A<-metagen(OR,
+           seTE,
+           studlab = Author,
+           method.tau = "SJ",
+           sm = "OR",
+           data = result)
+A
+forest(A,
+       sortvar=TE,
+       xlim = "symmetric",
+       rightlabs = c("95% CI","weight"),
+       leftlabs = c("Author", "N"),
+       lab.e = "Intervention",
+       pooled.totals = FALSE,
+       smlab = NULL,
+       text.random = "Overall effect",
+       print.tau2 = FALSE,
+       col.study = "black",
+       col.square = "lightblue",
+       col.diamond = "pink",
+       col.diamond.lines = "pink",
+       col.predict = "pink",
+       fontsize = 10,
+       print.I2.ci = TRUE,
+       digits.sd = 2
+)
+```
+
+```{r,out.width='\\textwidth', out.height='\\textheight', fig.height = 10, fig.align='center'}
+#subgroup analysis_pollutant
+subgroup.analysis.mixed.effects(x = A,
+                                subgroups = madata$pollutant)
+B<-subgroup.analysis.mixed.effects(x = A,
+                                   subgroups = madata$pollutant)
+forest(B,
+       col.diamond = "pink",
+       col.diamond.lines = "pink",
+       col.predict = "pink",
+       digits.sd = 2,
+       fontsize=10,
+       col.square = "lightblue"
+)
+```
+
+```{r,out.width='\\textwidth', out.height='\\textheight', fig.height = 10, fig.align='center'}
+#subgroup analysis_year
+subgroup.analysis.mixed.effects(x = A,
+                                subgroups = madata$year)
+C<-subgroup.analysis.mixed.effects(x = A,
+                                   subgroups = madata$year)
+forest(C,
+       col.diamond = "pink",
+       col.diamond.lines = "pink",
+       col.predict = "pink",
+       digits.sd = 2,
+       fontsize=10,
+       col.square = "lightblue"
+)
+```
+```{r,out.width='\\textwidth', out.height='\\textheight', fig.height = 10, fig.align='center'}
+#subgroup analysis_continent
+subgroup.analysis.mixed.effects(x = A,
+                                subgroups = madata$continent)
+D<-subgroup.analysis.mixed.effects(x = A,
+                                   subgroups = madata$continent)
+forest(D,
+       col.diamond = "pink",
+       col.diamond.lines = "pink",
+       col.predict = "pink",
+       digits.sd = 2,
+       fontsize=10,
+       col.square = "lightblue"
+)
+```
+```{r,out.width='\\textwidth', out.height='\\textheight', fig.height = 10, fig.align='center'}
+#subgroup analysis_study design
+subgroup.analysis.mixed.effects(x = A,
+                                subgroups = madata$studydesign)
+E<-subgroup.analysis.mixed.effects(x = A,
+                                   subgroups = madata$studydesign)
+forest(E,
+       col.diamond = "pink",
+       col.diamond.lines = "pink",
+       col.predict = "pink",
+       digits.sd = 2,
+       fontsize=10,
+       col.square = "lightblue"
+)
+```
+```{r,out.width='\\textwidth', out.height='\\textheight', fig.height = 10, fig.align='center'}
+#subgroup analysis_exposure duration
+subgroup.analysis.mixed.effects(x = A,
+                                subgroups = madata$duration)
+G<-subgroup.analysis.mixed.effects(x = A,
+                                   subgroups = madata$duration)
+forest(G,
+       col.diamond = "pink",
+       col.diamond.lines = "pink",
+       col.predict = "pink",
+       digits.sd = 2,
+       fontsize=10,
+       col.square = "lightblue"
+)
+```
+
+```{r}
+#publication bias_funnel plot
+funnel(A)
+```
+```{r}
+#funnel plots including the imputed studies
+A.trimfill<-trimfill(A)
+funnel(A.trimfill,xlab = "Hedges' g")
+```
+
+```{r}
+#publication bias_egger's test
+eggers.test(x = A)
+```
+```{r}
+#publication bias_p curve
+pcurve(A)
+```
+
+```{r}
+#sensitivity analysis
+Inf.A<-InfluenceAnalysis(x=A,random = TRUE,subplot.heights = c(40,60),subplot.widths = c(20,20),text.scale = 0.8)
+Inf.A
+plot(Inf.A)
+```
+```{r}
+#regression_pollutant
+bubble_mod1 <- ggplot(result, 
+                     aes(pollutant, OR,      
+                         size = 1 / sqrt(sd), color=pollutant)) + 
+  geom_point(shape = 1) +                   
+  geom_smooth(method = lm,                
+              color = "pink",
+              formula = y ~ x,
+              se=T,                          
+              size = 0.5, 
+              alpha = .2) +  
+  ylab(expression("Odds Ratio")) + 
+  xlab("pollutant") +                
+  theme_classic() +                          
+  scale_size_continuous(guide = "none") 
+bubble_mod1
+```
+```{r}
+#regression_year
+bubble_mod2 <- ggplot(result, 
+                     aes(year, OR,      
+                         size = 1 / sqrt(sd),color=year)) + 
+  geom_point(shape = 1) +                   
+  geom_smooth(method = lm,                
+              color = "pink",
+              formula = y ~ x,
+              se=T,                          
+              size = 0.5, 
+              alpha = .2) +  
+  ylab(expression("Odds Ratio")) + 
+  xlab("year") +                
+  theme_classic() +                          
+  scale_size_continuous(guide = "none") 
+bubble_mod2
+```
+```{r}
+#regression_continent
+bubble_mod3 <- ggplot(result, 
+                     aes(continent, OR,      
+                         size = 1 / sqrt(sd), color=continent)) + 
+  geom_point(shape = 1) +                   
+  geom_smooth(method = lm,                
+              color = "pink",
+              formula = y ~ x,
+              se=T,                          
+              size = 0.5, 
+              alpha = .2) +  
+  ylab(expression("Odds Ratio")) + 
+  xlab("continent") +                
+  theme_classic() +                          
+  scale_size_continuous(guide = "none") 
+bubble_mod3
+```
+```{r}
+#regression_study design
+bubble_mod4 <- ggplot(result, 
+                     aes(studydesign, OR,      
+                         size = 1 / sqrt(sd), color=studydesign)) + 
+  geom_point(shape = 1) +                   
+  geom_smooth(method = lm,                
+              color = "pink",
+              formula = y ~ x,
+              se=T,                          
+              size = 0.5, 
+              alpha = .2) +  
+  ylab(expression("Odds Ratio")) + 
+  xlab("study design") +                
+  theme_classic() +                          
+  scale_size_continuous(guide = "none") 
+bubble_mod4
+```
+```{r}
+#regression_exposure duration
+bubble_mod5 <- ggplot(result, 
+                     aes(duration, OR,      
+                         size = 1 / sqrt(sd), color=duration)) + 
+  geom_point(shape = 1) +                   
+  geom_smooth(method = lm,                
+              color = "pink",
+              formula = y ~ x,
+              se=T,                          
+              size = 0.5, 
+              alpha = .2) +  
+  ylab(expression("Odds Ratio")) + 
+  xlab("duration") +                
+  theme_classic() +                          
+  scale_size_continuous(guide = "none") 
+bubble_mod5
+```
+
+```{r}
+##multiregression
+model1 <- rma(yi=OR,
+              sei=sd,
+              data=result.data,
+              method = "ML",
+              mods = ~ pollutant+year+continent+studydesign+duration,
+              test="knha")
+model1
+
+
+multimodel.inference(TE = "OR",
+                     seTE = "sd",
+                     data = result.data,
+                     predictors = c("year", "pollutant", "continent", "studydesign", "duration"), interaction = TRUE)
+```
